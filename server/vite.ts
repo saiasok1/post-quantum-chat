@@ -1,12 +1,11 @@
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
+import express, { Express } from "express";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-
-import express, { type Express } from "express";
-import fs from "fs";
 import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";
 import viteConfig from "../vite.config";
@@ -77,11 +76,14 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(__dirname, "public");
+  // IMPORTANT: go to dist/public (not just public)
+  const distPath = path.resolve(__dirname, "../public");
+
+  console.log("Serving static from:", distPath);
 
   if (!fs.existsSync(distPath)) {
     throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
+      `Could not find the build directory: ${distPath}, make sure to build the client first`
     );
   }
 
