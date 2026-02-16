@@ -79,7 +79,8 @@ export async function setupVite(app: Express, server: Server) {
 
 export function serveStatic(app: Express) {
   // IMPORTANT: go to dist/public (not just public)
-  const distPath = path.resolve(__dirname, "../public");
+  const distPath = path.resolve(process.cwd(), "dist/public");
+
 
   console.log("Serving static from:", distPath);
 
