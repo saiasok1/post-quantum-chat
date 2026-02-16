@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PQC Chat Search</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+        <span>PQC Chat Search</span>
+      </div>
+      <div class="connection-status" id="connectionStatus">
+        <div class="status-dot offline"></div>
+        <span>Disconnected</span>
+      </div>
+    </div>
+
+    <!-- Search Section -->
+    <div class="search-section">
+      <div class="search-input-container">
+        <input 
+          type="text" 
+          id="searchInput" 
+          placeholder="Search the internet..."
+          class="search-input"
+        >
+        <button id="searchBtn" class="search-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+            <path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </button>
+      </div>
+      
+      <div class="search-options">
+        <select id="searchEngine" class="search-engine-select">
+          <option value="duckduckgo">DuckDuckGo</option>
+          <option value="google">Google (API Key Required)</option>
+        </select>
+        <button id="settingsBtn" class="settings-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+            <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="loading-state hidden">
+      <div class="spinner"></div>
+      <span>Searching...</span>
+    </div>
+
+    <!-- Search Results -->
+    <div id="searchResults" class="search-results hidden">
+      <div class="results-header">
+        <h3>Search Results</h3>
+        <button id="sendToChat" class="send-to-chat-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M22 2L11 13" stroke="currentColor" stroke-width="2"/>
+            <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2"/>
+          </svg>
+          Send to Chat
+        </button>
+      </div>
+      <div id="resultsContainer" class="results-container">
+        <!-- Results will be populated here -->
+      </div>
+    </div>
+
+    <!-- Chat Integration -->
+    <div class="chat-section">
+      <div class="chat-header">
+        <h3>Chat Integration</h3>
+        <div class="encryption-badge" id="encryptionBadge">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+            <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+          </svg>
+          PQC Encrypted
+        </div>
+      </div>
+      
+      <div class="quick-actions">
+        <button id="openChatBtn" class="action-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="2"/>
+          </svg>
+          Open Chat
+        </button>
+        <button id="clearResults" class="action-btn secondary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z" stroke="currentColor" stroke-width="2"/>
+          </svg>
+          Clear
+        </button>
+      </div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div id="settingsPanel" class="settings-panel hidden">
+      <div class="settings-header">
+        <h3>Settings</h3>
+        <button id="closeSettings" class="close-btn">×</button>
+      </div>
+      
+      <div class="settings-content">
+        <div class="setting-group">
+          <label for="googleApiKey">Google Search API Key:</label>
+          <input type="password" id="googleApiKey" placeholder="Enter API key...">
+        </div>
+        
+        <div class="setting-group">
+          <label for="searchEngineId">Google Search Engine ID:</label>
+          <input type="text" id="searchEngineId" placeholder="Enter search engine ID...">
+        </div>
+        
+        <div class="setting-group">
+          <label for="maxResults">Max Results:</label>
+          <select id="maxResults">
+            <option value="5">5 results</option>
+            <option value="10" selected>10 results</option>
+            <option value="15">15 results</option>
+            <option value="20">20 results</option>
+          </select>
+        </div>
+        
+        <div class="setting-group">
+          <label>
+            <input type="checkbox" id="autoSendToChat">
+            Auto-send results to chat
+          </label>
+        </div>
+        
+        <button id="saveSettings" class="save-btn">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

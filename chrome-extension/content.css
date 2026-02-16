@@ -1,0 +1,152 @@
+/* PQC Chat Extension Content Styles */
+
+/* Extension indicator animations */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+#pqc-extension-indicator {
+  animation: slideInRight 0.3s ease-out;
+}
+
+/* Search result highlights */
+.pqc-search-highlight {
+  background: #fbbf24 !important;
+  color: #000 !important;
+  padding: 2px 4px;
+  border-radius: 2px;
+  font-weight: 500;
+}
+
+/* Extension notification styles */
+.pqc-notification {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+  border: none !important;
+  outline: none !important;
+}
+
+/* Integration with chat interface */
+.pqc-search-results-container {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 8px 0;
+  font-family: system-ui, sans-serif;
+}
+
+.pqc-search-results-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #10b981;
+  font-size: 14px;
+}
+
+.pqc-search-result-item {
+  margin-bottom: 8px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  border-left: 3px solid #10b981;
+}
+
+.pqc-search-result-title {
+  font-weight: 600;
+  color: #60a5fa;
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+
+.pqc-search-result-url {
+  font-size: 11px;
+  color: #10b981;
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+
+.pqc-search-result-snippet {
+  font-size: 12px;
+  color: #d1d5db;
+  line-height: 1.4;
+}
+
+/* Hover effects for interactive elements */
+.pqc-clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pqc-clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Loading spinner for search operations */
+.pqc-loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #374151;
+  border-top: 2px solid #10b981;
+  border-radius: 50%;
+  animation: pqcSpin 1s linear infinite;
+}
+
+@keyframes pqcSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  #pqc-extension-indicator {
+    top: 10px !important;
+    right: 10px !important;
+    font-size: 11px !important;
+    padding: 6px 10px !important;
+  }
+  
+  .pqc-notification {
+    top: 60px !important;
+    right: 10px !important;
+    max-width: 250px !important;
+    font-size: 12px !important;
+  }
+}
+
+/* Dark mode compatibility */
+@media (prefers-color-scheme: dark) {
+  .pqc-search-results-container {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.3);
+  }
+  
+  .pqc-search-result-item {
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .pqc-search-highlight {
+    background: #ffff00 !important;
+    color: #000000 !important;
+    border: 1px solid #000000;
+  }
+  
+  #pqc-extension-indicator {
+    border: 2px solid #ffffff;
+  }
+}

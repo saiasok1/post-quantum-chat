@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Extension Icons</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        canvas { border: 1px solid #ccc; margin: 10px; }
+        button { background: #4285f4; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #3367d6; }
+        .icon-preview { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0; }
+        .icon-item { text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PQC Chat Extension Icon Generator</h1>
+        <p>Click the button below to generate and download all required icons for the Chrome extension.</p>
+        
+        <button onclick="generateIcons()">Generate All Icons</button>
+        <button onclick="downloadAll()">Download All Icons</button>
+        
+        <div class="icon-preview" id="iconPreview"></div>
+        
+        <h3>Instructions:</h3>
+        <ol>
+            <li>Click "Generate All Icons" to create the icons</li>
+            <li>Click "Download All Icons" to save them</li>
+            <li>Move the downloaded PNG files to the chrome-extension/icons/ folder</li>
+            <li>Try loading the extension in Chrome again</li>
+        </ol>
+    </div>
+
+    <script>
+        const iconSizes = [16, 32, 48, 128];
+        const canvases = {};
+
+        function generateIcons() {
+            const preview = document.getElementById('iconPreview');
+            preview.innerHTML = '';
+
+            iconSizes.forEach(size => {
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+
+                // Create gradient background
+                const gradient = ctx.createLinearGradient(0, 0, size, size);
+                gradient.addColorStop(0, '#60a5fa'); // Blue
+                gradient.addColorStop(1, '#10b981'); // Green
+
+                // Fill background
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, size, size);
+
+                // Add border
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = Math.max(1, size / 32);
+                ctx.strokeRect(0, 0, size, size);
+
+                // Draw shield/lock icon
+                ctx.fillStyle = '#ffffff';
+                ctx.font = `bold ${size * 0.4}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                if (size >= 48) {
+                    // Draw "PQC" text for larger icons
+                    ctx.fillText('PQC', size / 2, size / 2);
+                } else {
+                    // Draw simple shield for smaller icons
+                    ctx.beginPath();
+                    const centerX = size / 2;
+                    const centerY = size / 2;
+                    const shieldSize = size * 0.3;
+                    
+                    ctx.moveTo(centerX, centerY - shieldSize);
+                    ctx.lineTo(centerX - shieldSize, centerY);
+                    ctx.lineTo(centerX, centerY + shieldSize);
+                    ctx.lineTo(centerX + shieldSize, centerY);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+
+                canvases[size] = canvas;
+
+                // Add to preview
+                const iconItem = document.createElement('div');
+                iconItem.className = 'icon-item';
+                iconItem.innerHTML = `
+                    <canvas width="${size}" height="${size}"></canvas>
+                    <div>icon${size}.png</div>
+                `;
+                
+                const previewCanvas = iconItem.querySelector('canvas');
+                const previewCtx = previewCanvas.getContext('2d');
+                previewCtx.drawImage(canvas, 0, 0);
+                
+                preview.appendChild(iconItem);
+            });
+        }
+
+        function downloadAll() {
+            iconSizes.forEach(size => {
+                if (canvases[size]) {
+                    downloadCanvas(canvases[size], `icon${size}.png`);
+                }
+            });
+        }
+
+        function downloadCanvas(canvas, filename) {
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Generate icons on page load
+        window.onload = generateIcons;
+    </script>
+</body>
+</html>
