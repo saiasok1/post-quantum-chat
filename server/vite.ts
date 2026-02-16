@@ -3,8 +3,10 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import express, { Express } from "express";
 
+// FIX for ESM (__dirname is undefined in ESM)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 
 import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";
