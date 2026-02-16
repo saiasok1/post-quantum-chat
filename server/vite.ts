@@ -78,21 +78,21 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  // IMPORTANT: go to dist/public (not just public)
+  // Use absolute path from project root (works on Render)
   const distPath = path.resolve(process.cwd(), "dist/public");
 
-
-  console.log("Serving static from:", distPath);
+  console.log("Serving static files from:", distPath);
 
   if (!fs.existsSync(distPath)) {
     throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`
+      `Build folder not found at ${distPath}. Make sure vite build ran successfully.`
     );
   }
 
   app.use(express.static(distPath));
 
+  // SPA fallback
   app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+    res.sendFile(path.join(distPath, "index.html"));
   });
 }
