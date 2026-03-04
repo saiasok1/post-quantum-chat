@@ -1,4 +1,5 @@
 import { ml_kem512, ml_kem768, ml_kem1024 } from '@noble/post-quantum/ml-kem.js';
+import { QSFMLKEM768P256, QSFMLKEM1024P384 } from '@noble/post-quantum/hybrid.js';
 import { ml_dsa44, ml_dsa65, ml_dsa87 } from '@noble/post-quantum/ml-dsa.js';
 import type { PQCKeyPair } from '@shared/schema';
 
@@ -12,7 +13,8 @@ export type KemAlgorithm =
     | "ml-kem-512" | "ml-kem-768" | "ml-kem-1024"
     | "kyber-512" | "kyber-768" | "kyber-1024"
     | "rsa-2048" | "rsa-4096"
-    | "ecdh-p256" | "ecdh-p384";
+    | "ecdh-p256" | "ecdh-p384"
+    | "ML KemEcdh768" | "ML KemEcdh1024";
 
 export type SignatureAlgorithm =
     | "ml-dsa-44" | "ml-dsa-65" | "ml-dsa-87"
@@ -45,11 +47,13 @@ export class CryptoEngine {
         console.log(`🔑 Generating KEM keypair: ${algorithm}`);
 
         // Post-Quantum
-        if (algorithm.startsWith("ml-kem") || algorithm.startsWith("kyber")) {
+        if (algorithm.startsWith("ml-kem") || algorithm.startsWith("kyber") || algorithm.startsWith("ML KemEcdh")) {
             switch (algorithm) {
                 case "ml-kem-512": case "kyber-512": this.pqcKemKey = ml_kem512.keygen(); break;
                 case "ml-kem-768": case "kyber-768": this.pqcKemKey = ml_kem768.keygen(); break;
                 case "ml-kem-1024": case "kyber-1024": this.pqcKemKey = ml_kem1024.keygen(); break;
+                case "ML KemEcdh768": this.pqcKemKey = QSFMLKEM768P256.keygen(); break;
+                case "ML KemEcdh1024": this.pqcKemKey = QSFMLKEM1024P384.keygen(); break;
             }
             this.webCryptoKemKey = null;
 
@@ -202,12 +206,14 @@ export class CryptoEngine {
 
         try {
             // PQC
-            if (algorithm.startsWith("ml-kem") || algorithm.startsWith("kyber")) {
+            if (algorithm.startsWith("ml-kem") || algorithm.startsWith("kyber") || algorithm.startsWith("ML KemEcdh")) {
                 let result;
                 switch (algorithm) {
                     case "ml-kem-512": case "kyber-512": result = ml_kem512.encapsulate(publicKeyBytes); break;
                     case "ml-kem-768": case "kyber-768": result = ml_kem768.encapsulate(publicKeyBytes); break;
                     case "ml-kem-1024": case "kyber-1024": result = ml_kem1024.encapsulate(publicKeyBytes); break;
+                    case "ML KemEcdh768": result = QSFMLKEM768P256.encapsulate(publicKeyBytes); break;
+                    case "ML KemEcdh1024": result = QSFMLKEM1024P384.encapsulate(publicKeyBytes); break;
                     default: throw new Error("Unknown PQC algo");
                 }
                 // noble-post-quantum v0.2.0 uses 'ciphertext' (lowercase) or 'cipherText' depending on specific build/version nuances.
@@ -307,6 +313,8 @@ export class CryptoEngine {
                     case "ml-kem-512": case "kyber-512": result = ml_kem512.decapsulate(ciphertextBytes, this.pqcKemKey.secretKey); break;
                     case "ml-kem-768": case "kyber-768": result = ml_kem768.decapsulate(ciphertextBytes, this.pqcKemKey.secretKey); break;
                     case "ml-kem-1024": case "kyber-1024": result = ml_kem1024.decapsulate(ciphertextBytes, this.pqcKemKey.secretKey); break;
+                    case "ML KemEcdh768": result = QSFMLKEM768P256.decapsulate(ciphertextBytes, this.pqcKemKey.secretKey); break;
+                    case "ML KemEcdh1024": result = QSFMLKEM1024P384.decapsulate(ciphertextBytes, this.pqcKemKey.secretKey); break;
                     default: throw new Error("Mismatch or unknown PQC algo");
                 }
                 this.sharedSecret = result;

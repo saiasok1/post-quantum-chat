@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Play, RotateCcw } from "lucide-react";
 import { cryptoEngine, KemAlgorithm, SignatureAlgorithm } from "@/lib/crypto";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 interface BenchmarkResult {
     category: "KEM" | "Signature";
@@ -19,6 +20,8 @@ interface BenchmarkResult {
 const KEM_ALGOS: KemAlgorithm[] = [
     "ml-kem-768",
     "kyber-768",
+    "ML KemEcdh768",
+    "ML KemEcdh1024",
     "rsa-2048",
     "ecdh-p256"
 ];
@@ -28,6 +31,17 @@ const SIG_ALGOS: SignatureAlgorithm[] = [
     "rsa-pss-2048",
     "ecdsa-p256"
 ];
+
+const COLORS = {
+    pq: ["#8884d8", "#83a6ed", "#8dd1e1"], // Purples/Blues for Post-Quantum
+    classic: ["#ffc658", "#ff7300", "#ff0000"] // Oranges/Reds for Classical
+};
+
+const getAlgorithmColor = (algo: string, index: number) => {
+    const isPQ = algo.startsWith("ml-") || algo.startsWith("kyber") || algo.startsWith("ML ");
+    if (isPQ) return COLORS.pq[index % COLORS.pq.length];
+    return COLORS.classic[index % COLORS.classic.length];
+};
 
 export function CryptoBenchmark() {
     const [results, setResults] = useState<BenchmarkResult[]>([]);
@@ -141,7 +155,7 @@ export function CryptoBenchmark() {
                 </div>
             </CardHeader>
             <CardContent>
-                <Table>
+                <Table className="mb-8">
                     <TableHeader>
                         <TableRow>
                             <TableHead>Category</TableHead>
@@ -182,6 +196,72 @@ export function CryptoBenchmark() {
                         ))}
                     </TableBody>
                 </Table>
+
+                {results.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-sm font-medium">Key Generation Time (ms)</CardTitle>
+                            </CardHeader>
+                            <CardContent className="h-[300px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={results} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                                        <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                                        <XAxis
+                                            dataKey="algorithm"
+                                            angle={-45}
+                                            textAnchor="end"
+                                            height={60}
+                                            interval={0}
+                                            tick={{ fill: 'currentColor', fontSize: 12, opacity: 0.8 }}
+                                        />
+                                        <YAxis tick={{ fill: 'currentColor', fontSize: 12, opacity: 0.8 }} />
+                                        <Tooltip
+                                            formatter={(value: number) => [`${value.toFixed(2)} ms`, 'Time']}
+                                            contentStyle={{ backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))' }}
+                                        />
+                                        <Bar dataKey="keygenTime" radius={[4, 4, 0, 0]}>
+                                            {results.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={getAlgorithmColor(entry.algorithm, index)} />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-sm font-medium">Public Key Size (bytes)</CardTitle>
+                            </CardHeader>
+                            <CardContent className="h-[300px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={results} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                                        <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                                        <XAxis
+                                            dataKey="algorithm"
+                                            angle={-45}
+                                            textAnchor="end"
+                                            height={60}
+                                            interval={0}
+                                            tick={{ fill: 'currentColor', fontSize: 12, opacity: 0.8 }}
+                                        />
+                                        <YAxis tick={{ fill: 'currentColor', fontSize: 12, opacity: 0.8 }} />
+                                        <Tooltip
+                                            formatter={(value: number) => [`${value} bytes`, 'Size']}
+                                            contentStyle={{ backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))' }}
+                                        />
+                                        <Bar dataKey="publicKeySize" radius={[4, 4, 0, 0]}>
+                                            {results.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={getAlgorithmColor(entry.algorithm, index)} />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
             </CardContent>
         </Card>
     );

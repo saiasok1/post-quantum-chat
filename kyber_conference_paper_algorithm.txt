@@ -1,0 +1,179 @@
+\section{Kyber Key Encapsulation Mechanism}
+
+\subsection{Overview}
+Kyber is a post-quantum key encapsulation mechanism (KEM) based on the Module Learning With Errors (MLWE) problem. It provides IND-CCA2 security against quantum adversaries and is standardized in FIPS 203. The algorithm operates in the polynomial ring $\mathbb{Z}_q[X]/(X^{256} + 1)$ where $q = 3329$.
+
+\subsection{Mathematical Preliminaries}
+
+\subsubsection{Ring Definition}
+Let $R = \mathbb{Z}_q[X]/(X^{256} + 1)$ be the polynomial ring of degree less than 256 over the finite field $\mathbb{Z}_q$, where $q = 3329$ is a prime modulus.
+
+\subsubsection{Module Structure}
+For security parameter $k \in \{2, 3, 4\}$, Kyber operates on $k \times k$ matrices over $R_q$.
+
+\subsubsection{Number Theoretic Transform}
+The Number Theoretic Transform (NTT) enables efficient polynomial multiplication:
+\begin{itemize}
+\item $\text{NTT}: R_q \rightarrow R_q$ converts polynomials to pointwise evaluation
+\item $\text{INTT}: R_q \rightarrow R_q$ converts back to coefficient representation
+\end{itemize}
+
+\subsection{Algorithm Parameters}
+
+\begin{table}[h]
+\centering
+\caption{Kyber Security Parameters}
+\label{tab:kyber-params}
+\begin{tabular}{|c|c|c|c|c|c|c|}
+\hline
+Security Level & $k$ & $\eta_1$ & $\eta_2$ & $d_u$ & $d_v$ & Public Key Size \\
+\hline
+Kyber-512 & 2 & 3 & 2 & 10 & 4 & 800 bytes \\
+Kyber-768 & 3 & 2 & 2 & 10 & 4 & 1184 bytes \\
+Kyber-1024 & 4 & 2 & 2 & 11 & 5 & 1568 bytes \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Compression Functions}
+
+\subsubsection{Compression}
+For a polynomial $p \in R_q$ and compression parameter $d$:
+\[
+\text{Compress}_q(p, d) = \left\lfloor \frac{2^d}{q} \cdot p \right\rceil \mod 2^d
+\]
+
+\subsubsection{Decompression}
+\[
+\text{Decompress}_q(p, d) = \left\lfloor \frac{q}{2^d} \cdot p \right\rceil
+\]
+
+\subsection{Noise Sampling}
+
+\subsubsection{Centered Binomial Distribution}
+The Centered Binomial Distribution $\text{CBD}_\eta(\mathbf{B})$ samples small coefficients:
+\[
+\text{CBD}_\eta(\mathbf{B}) = \sum_{i=0}^{\eta-1} b_{2i} - \sum_{i=0}^{\eta-1} b_{2i+1}
+\]
+where $\mathbf{B}$ is a byte array and $b_i$ are its bits.
+
+\subsection{Key Generation Algorithm}
+
+\begin{algorithm}[H]
+\caption{Kyber Key Generation}
+\label{alg:keygen}
+\begin{algorithmic}[1]
+\Require Random seed $\rho \in \{0,1\}^{256}$, $\sigma \in \{0,1\}^{256}$
+\Ensure Public key $\text{pk} = (\rho, \hat{t})$, Private key $\text{sk} = (\rho, \hat{s}, H(\text{pk}))$
+
+\State $\mathbf{A} \gets \text{Parse}(\rho)$ \Comment{Expand seed to $k \times k$ matrix over $R_q$}
+\For{$i \gets 0$ to $k-1$}
+    \State $s[i] \gets \text{CBD}_{\eta_1}(\text{PRF}_{\eta_1}(\sigma, i))$
+    \State $e[i] \gets \text{CBD}_{\eta_1}(\text{PRF}_{\eta_1}(\sigma, k+i))$
+\EndFor
+\State $t \gets \mathbf{A} \circ s + e$ \Comment{Matrix-vector multiplication in $R_q$}
+\State $\hat{t} \gets \text{Compress}_q(t, d_v)$
+\State $\hat{s} \gets \text{Compress}_q(s, d_v)$
+\State $\text{pk} \gets (\rho, \hat{t})$
+\State $\text{sk} \gets (\rho, \hat{s}, H(\text{pk}))$
+\State \Return $(\text{pk}, \text{sk})$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Encapsulation Algorithm}
+
+\begin{algorithm}[H]
+\caption{Kyber Encapsulation}
+\label{alg:encapsulate}
+\begin{algorithmic}[1]
+\Require Public key $\text{pk} = (\rho, \hat{t})$, Random message $m \in \{0,1\}^{256}$
+\Ensure Ciphertext $c = (c_1, c_2)$, Shared secret $K$
+
+\State $\mathbf{A} \gets \text{Parse}(\rho)$
+\State $t \gets \text{Decompress}_q(\hat{t}, d_v)$
+\For{$i \gets 0$ to $k-1$}
+    \State $r[i] \gets \text{CBD}_{\eta_1}(\text{PRF}_{\eta_1}(m||H(\text{pk}), i))$
+    \State $e_1[i] \gets \text{CBD}_{\eta_1}(\text{PRF}_{\eta_1}(m||H(\text{pk}), k+i))$
+\EndFor
+\State $e_2 \gets \text{CBD}_{\eta_2}(\text{PRF}_{\eta_2}(m||H(\text{pk}), 2k))$
+\State $u \gets \mathbf{A}^T \circ r + e_1$
+\State $v \gets t^T \circ r + e_2 + \text{Compress}_q(\text{Decode}(m), 1)$
+\State $c_1 \gets \text{Compress}_q(u, d_u)$
+\State $c_2 \gets \text{Compress}_q(v, d_v)$
+\State $K \gets \text{SHAKE256}(e_2 || H(c_1 || c_2 || H(\text{pk})))$
+\State \Return $(c, K)$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Decapsulation Algorithm}
+
+\begin{algorithm}[H]
+\caption{Kyber Decapsulation}
+\label{alg:decapsulate}
+\begin{algorithmic}[1]
+\Require Private key $\text{sk} = (\rho, \hat{s}, H(\text{pk}))$, Ciphertext $c = (c_1, c_2)$
+\Ensure Shared secret $K$
+
+\State $u \gets \text{Decompress}_q(c_1, d_u)$
+\State $v \gets \text{Decompress}_q(c_2, d_v)$
+\State $s \gets \text{Decompress}_q(\hat{s}, d_v)$
+\State $v' \gets s^T \circ u$ \Comment{Inner product in $R_q$}
+\State $m \gets \text{Encode}(\text{Decompress}_q(v - v', 1))$
+\State $(K', c_1', c_2') \gets \text{Encapsulate}(\text{pk}, m)$
+\If{$(c_1, c_2) = (c_1', c_2')$}
+    \State \Return $K'$
+\Else
+    \State \Return $\text{SHAKE256}(\hat{s} || c_1 || c_2)$
+\EndIf
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Polynomial Arithmetic Operations}
+
+\subsubsection{Addition}
+For polynomials $a, b \in R_q$:
+\[
+(a + b)(X) = (a(X) + b(X)) \mod (X^{256} + 1)
+\]
+
+\subsubsection{Multiplication}
+\[
+(a \cdot b)(X) = \left( \sum_{i=0}^{255} a_i \cdot b_{(j-i) \mod 256} \right) \mod q
+\]
+
+\subsubsection{NTT Multiplication}
+Efficient multiplication using NTT representation:
+\[
+\text{MultiplyNTTs}(f, g)[i] = f[i] \cdot g[i] \mod q
+\]
+
+\subsection{Security Properties}
+
+Kyber achieves IND-CCA2 security through the Fujisaki-Okamoto transform, which converts a weakly secure public-key encryption scheme into a strongly secure KEM. The security relies on the hardness of the MLWE problem in polynomial rings.
+
+\subsection{Performance Characteristics}
+
+\begin{itemize}
+\item \textbf{Key Generation}: $O(k^2 \cdot 256 \log 256)$ operations
+\item \textbf{Encapsulation}: $O(k^2 \cdot 256 \log 256)$ operations
+\item \textbf{Decapsulation}: $O(k^2 \cdot 256 \log 256)$ operations
+\item \textbf{Bandwidth}: Public key $\approx 12k \cdot 256$ bits, Ciphertext $\approx (d_u k + d_v) \cdot 256$ bits
+\end{itemize}
+
+\subsection{Implementation Considerations}
+
+\begin{enumerate}
+\item All arithmetic operations are performed modulo $q = 3329$
+\item Polynomial coefficients are reduced modulo $q$ after each operation
+\item NTT is used for efficient multiplication in $R_q$
+\item Compression reduces communication bandwidth while preserving security
+\item Randomness quality is critical for security guarantees
+\end{enumerate}
+
+\subsection{References}
+
+\begin{enumerate}
+\item NIST FIPS 203: Module-Lattice-Based Key-Encapsulation Mechanism Standard
+\item Bos, J. W., et al. "CRYSTALS-Kyber: A CCA-secure module-lattice-based KEM." In: 2018 IEEE European Symposium on Security and Privacy (EuroS\&P). IEEE, 2018.
+\item Avanzi, R., et al. "CRYSTALS-Kyber." National Institute of Standards and Technology, 2020.
+\end{enumerate}

@@ -85,6 +85,8 @@ export function SettingsModal() {
                           <SelectItem value="kyber-512">Kyber-512 (Legacy)</SelectItem>
                           <SelectItem value="kyber-768">Kyber-768 (Legacy)</SelectItem>
                           <SelectItem value="kyber-1024">Kyber-1024 (Legacy)</SelectItem>
+                          <SelectItem value="ML KemEcdh768">ML KemEcdh768</SelectItem>
+                          <SelectItem value="ML KemEcdh1024">ML KemEcdh1024</SelectItem>
                           <SelectItem value="rsa-2048">RSA-2048 (Classic 112-bit)</SelectItem>
                           <SelectItem value="rsa-4096">RSA-4096 (Classic 128-bit)</SelectItem>
                           <SelectItem value="ecdh-p256">ECDH P-256 (Classic 128-bit)</SelectItem>

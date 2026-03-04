@@ -1,0 +1,240 @@
+# Kyber Post-Quantum Key Encapsulation Mechanism (KEM)
+# Algorithm Specification with Step-by-Step Equations
+
+## Overview
+Kyber is a post-quantum key encapsulation mechanism based on the Module Learning With Errors (MLWE) problem.
+It provides IND-CCA2 security and is one of the finalists in NIST's post-quantum cryptography standardization process.
+
+## Mathematical Foundations
+
+### Module Learning With Errors (MLWE)
+The security of Kyber is based on the hardness of solving the MLWE problem in polynomial rings.
+
+**Ring Definition:**
+R = Z_q[X]/(X^n + 1) where n = 256, q = 3329 (prime modulus)
+
+**Module Structure:**
+For k ∈ {2,3,4}, we work with k × k matrices over R_q.
+
+### Parameters
+- n = 256 (degree of polynomials)
+- q = 3329 (modulus, prime)
+- k ∈ {2,3,4} (module dimension, determines security level)
+- η₁, η₂ ∈ {2,3} (noise parameters for key generation and encryption)
+- dᵤ, dᵥ ∈ {10,11,12} (compression parameters)
+
+## Key Generation Algorithm
+
+### Input:
+- Random seed ρ ∈ {0,1}* (for generating A)
+- Random seed σ ∈ {0,1}* (for generating noise)
+
+### Output:
+- Public key: (ρ, t̂) where t̂ = Compress_q(t, dᵥ)
+- Private key: (ρ, ŝ) where ŝ = Compress_q(s, dᵥ)
+- Hash of public key: H(ρ||t̂)
+
+### Algorithm Steps:
+
+1. **Generate Public Matrix A:**
+   ```
+   A ← Parse(ρ)  // Expand seed ρ into k×k matrix A over R_q
+   ```
+
+2. **Generate Secret Vector s:**
+   ```
+   for i ∈ [0..k-1]:
+       s[i] ← CBD_η₁(PRF_η₁(σ, i))  // Centered Binomial Distribution
+   ```
+
+3. **Generate Error Vector e:**
+   ```
+   for i ∈ [0..k-1]:
+       e[i] ← CBD_η₁(PRF_η₁(σ, k+i))
+   ```
+
+4. **Compute Public Key t:**
+   ```
+   t ← A∘s + e  // Matrix-vector multiplication in R_q
+   ```
+
+5. **Compress Keys:**
+   ```
+   t̂ ← Compress_q(t, dᵥ)  // Compress each coefficient
+   ŝ ← Compress_q(s, dᵥ)
+   ```
+
+6. **Public Key:** pk = (ρ, t̂)
+7. **Private Key:** sk = (ρ, ŝ, H(pk))
+
+## Encapsulation Algorithm
+
+### Input:
+- Public key: (ρ, t̂)
+- Random message m ∈ {0,1}* (32 bytes)
+
+### Output:
+- Ciphertext: (c₁, c₂)
+- Shared secret: K
+
+### Algorithm Steps:
+
+1. **Expand Public Key:**
+   ```
+   A ← Parse(ρ)  // Reconstruct matrix A from seed ρ
+   t ← Decompress_q(t̂, dᵥ)  // Decompress public key
+   ```
+
+2. **Generate Random Vector r:**
+   ```
+   for i ∈ [0..k-1]:
+       r[i] ← CBD_η₁(PRF_η₁(m||H(pk), i))
+   ```
+
+3. **Generate Error Vector e₁:**
+   ```
+   for i ∈ [0..k-1]:
+       e₁[i] ← CBD_η₁(PRF_η₁(m||H(pk), k+i))
+   ```
+
+4. **Generate Error Polynomial e₂:**
+   ```
+   e₂ ← CBD_η₂(PRF_η₂(m||H(pk), 2k))
+   ```
+
+5. **Compute u:**
+   ```
+   u ← Aᵀ∘r + e₁  // Matrix-vector multiplication
+   ```
+
+6. **Compute v:**
+   ```
+   v ← tᵀ∘r + e₂ + Compress_q(Decode(m), 1)  // Inner product + message
+   ```
+
+7. **Compress Ciphertext:**
+   ```
+   c₁ ← Compress_q(u, dᵤ)
+   c₂ ← Compress_q(v, dᵥ)
+   ```
+
+8. **Shared Secret:**
+   ```
+   K ← SHAKE256(e₂||H(c₁||c₂||H(pk)))
+   ```
+
+## Decapsulation Algorithm
+
+### Input:
+- Private key: (ρ, ŝ, H(pk))
+- Ciphertext: (c₁, c₂)
+
+### Output:
+- Shared secret: K
+
+### Algorithm Steps:
+
+1. **Decompress Ciphertext:**
+   ```
+   u ← Decompress_q(c₁, dᵤ)
+   v ← Decompress_q(c₂, dᵥ)
+   ```
+
+2. **Decompress Secret Key:**
+   ```
+   s ← Decompress_q(ŝ, dᵥ)
+   ```
+
+3. **Compute v' (Expected v):**
+   ```
+   v' ← sᵀ∘u  // Inner product in R_q
+   ```
+
+4. **Extract Message:**
+   ```
+   m ← Encode(Decompress_q(v - v', 1))  // Remove noise, extract message
+   ```
+
+5. **Re-encapsulate:**
+   ```
+   (K', c₁', c₂') ← Encapsulate(pk, m)  // Re-run encapsulation
+   ```
+
+6. **Verify Ciphertext:**
+   ```
+   if (c₁, c₂) = (c₁', c₂'):
+       return K'  // Valid ciphertext
+   else:
+       return SHAKE256(ŝ||c₁||c₂)  // Invalid, return hashed secret
+   ```
+
+## Core Mathematical Operations
+
+### Polynomial Arithmetic in R_q
+
+**Addition:**
+```
+(a + b)(X) = (a(X) + b(X)) mod (X^n + 1)
+```
+
+**Multiplication:**
+```
+(a * b)(X) = (∑_{i=0}^{n-1} a_i * b_{(j-i) mod n}) mod q
+```
+
+**NTT (Number Theoretic Transform):**
+Used for fast multiplication in R_q:
+```
+NTT: R_q → R_q, polynomial → pointwise evaluation
+INTT: R_q → R_q, pointwise values → polynomial coefficients
+```
+
+### Compression Functions
+
+**Compress_q(x, d):**
+```
+Compress_q(x, d) = ⌈(2^d / q) * x⌉ mod 2^d
+```
+
+**Decompress_q(y, d):**
+```
+Decompress_q(y, d) = ⌈(q / 2^d) * y⌉
+```
+
+### Noise Sampling (CBD - Centered Binomial Distribution)
+
+**CBD_η(B):**
+For η = 2,3:
+```
+CBD_η(B) = (∑_{i=0}^{η-1} b_{2i} - ∑_{i=0}^{η-1} b_{2i+1})
+```
+Where B is a byte array, b_i are bits.
+
+### Hash Functions
+
+**SHA3-256:** For hashing public keys
+**SHA3-512:** For key derivation
+**SHAKE256:** For shared secret generation and random seed expansion
+
+## Security Parameters
+
+| Security Level | k | η₁ | η₂ | dᵤ | dᵥ | Public Key Size | Ciphertext Size |
+|----------------|---|-----|-----|-----|-----|-----------------|-----------------|
+| Kyber-512      | 2 | 3   | 2   | 10  | 4   | 800 bytes      | 768 bytes      |
+| Kyber-768      | 3 | 2   | 2   | 10  | 4   | 1184 bytes     | 1088 bytes     |
+| Kyber-1024     | 4 | 2   | 2   | 11  | 5   | 1568 bytes     | 1568 bytes     |
+
+## Implementation Notes
+
+1. **Modular Arithmetic:** All operations are performed modulo q = 3329
+2. **Polynomial Degree:** All polynomials have degree < 256
+3. **NTT Optimization:** Multiplication uses NTT for O(n log n) complexity
+4. **Compression:** Reduces bandwidth while maintaining security
+5. **IND-CCA2 Security:** Achieved through Fujisaki-Okamoto transform
+
+## References
+
+- NIST PQC Round 3 Submission: Kyber
+- CRYSTALS-Kyber Specification
+- Learning With Errors Problem
+- Module Learning With Errors Problem
